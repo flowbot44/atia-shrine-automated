@@ -21,6 +21,14 @@ pnpm i
 ```bash
 cp privateKeys.example privateKeys
 ```
+- Make your own local copy of .env file
+```bash
+cp .env.example .env
+```
+
+- Edit .env file and add a Sky Mavis API key (obtainable on [Sky Mavis Developer Portal](https://developers.skymavis.com/console/applications/))
+
+
 - Start Application
 ```bash
 pnpm start
