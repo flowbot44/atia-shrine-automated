@@ -4,6 +4,8 @@ import { ethers, Wallet } from "ethers";
 import * as dotenv from 'dotenv'
 import { fetchBuyGacha, getSlipBalance } from './gacha'
 import { exchangeToken, generateAccessTokenMessage } from './access-token'
+import { getConsumablesCount, getDailyCocoConsumedAxp } from './axp'
+
 dotenv.config()
 
 const rpc = 'https://api.roninchain.com/rpc';
@@ -12,10 +14,14 @@ const provider = new ethers.JsonRpcProvider(rpc, 2020, { batchMaxCount: 1 });
 const atiaAbi = JSON.parse(fs.readFileSync('abis/atiaalter.json', 'utf8'))
 const atiaContract = new ethers.Contract('0x9d3936dbd9a794ee31ef9f13814233d435bd806c', atiaAbi, provider)
 
-const shopABI = JSON.parse(fs.readFileSync('abis/garudashop.json', 'utf8'))
-const shopContract = new ethers.Contract('0x3e0674b1ddc84b0cfd9d773bb2ce23fe8f445de3', shopABI, provider)
+const shopAbi = JSON.parse(fs.readFileSync('abis/garudashop.json', 'utf8'))
+const shopContract = new ethers.Contract('0x3e0674b1ddc84b0cfd9d773bb2ce23fe8f445de3', shopAbi, provider)
 
-const POUCHES_PER_TX = 100
+const consumableAbi = JSON.parse(fs.readFileSync('abis/consumable.json', 'utf8'))
+const consumableContract = new ethers.Contract('0xeaa3d9af9c9c218dae63922c97eeee6c3f770e15', consumableAbi, provider)
+
+const POUCHES_PER_TX = 2
+
 
 cron.schedule('0 1 * * *', () => {
   console.log(`\nStarting Daily Axie Hard`)
@@ -25,29 +31,33 @@ cron.schedule('0 1 * * *', () => {
 });
 
 async function checkBlessings(signer: Wallet) {
-      console.log(`\n🙏 Making an offering to Atia`)  
-      isActivated(signer.address).then((res) => {
-        if (res) {
-          console.log(`\nOffering to Atia already complete`)
-          return
-        }
-        activateStreak(signer).then((res) => {
-          if (!res) return
-          console.log(`✅ Atia's Blessing activated for ${signer.address}`)
-        })
-      })
-    
+  console.log(`\n Making an offering to Atia`);
+
+  try {
+    const isActivatedResult = await isActivated(signer.address);
+
+    if (isActivatedResult) {
+      console.log(`\nOffering to Atia already complete`);
+      return;
+    }
+
+    const activateStreakResult = await activateStreak(signer);
+
+    if (activateStreakResult) {
+      console.log(`✅ Atia's Blessing activated for ${signer.address}`);
+      await new Promise(resolve => setTimeout(resolve, 60000))
+    }
+  } catch (error: any) {
+    console.error(`Error during blessing process: ${error.message}`);
+  }
 }
 
-async function spendSlips(signer: Wallet){
+async function spendSlips(premium: boolean, signer: Wallet, accessToken: string){
   
-  const premium = false //TODO make configurable.
+ 
   const slipsPerPouch = premium ? 50 : 10
 
   let results = []
-  const accessTokenMessage = await generateAccessTokenMessage(signer.address)
-  const accessTokenSignature = await signer.signMessage(accessTokenMessage)
-  const { accessToken } = await exchangeToken(accessTokenSignature, accessTokenMessage)
 
   const slips = await getSlipBalance(accessToken)
   
@@ -74,9 +84,8 @@ async function spendSlips(signer: Wallet){
         e.code && e.info && console.error(`⚠️ ${e.code} (${e.info.error.message})`)
       }
 
-      if (i < amount) {
-        await new Promise(resolve => setTimeout(resolve, 60000))
-      }
+      await new Promise(resolve => setTimeout(resolve, 60000))
+
     }
   }else{
     console.log(`Not enough slips ${slips} to batch into an efficent roll of ${POUCHES_PER_TX}`)
@@ -84,9 +93,57 @@ async function spendSlips(signer: Wallet){
 
 }
 
+async function feedAxiesCoco(axies: string[],usePremium:boolean, signer: Wallet, accessToken: string) {
+  
+  let consumablesToEat = await getConsumablesCount(signer.address, usePremium, accessToken )
+  
+  //TODO check approval to consume 1155 before proceeding
+
+  for (const axieId of axies) {
+
+    if(consumablesToEat < 1){
+      console.log(`No Coco no eaty`)
+      return
+    }
+    const cocoToConsume = await calcCocoToConsume(axieId, consumablesToEat, usePremium, accessToken)
+    console.log(`Axie trying to eat ${cocoToConsume} coco`)
+    if(cocoToConsume == 0){
+      console.log(`Axie #${axieId} cannot consume coco check level or was already feed`)
+    }else {
+      const connectedContract = <ethers.Contract>consumableContract.connect(signer)
+      const txFeed = await connectedContract.consume(axieId, usePremium ? '2' : '1', cocoToConsume, {
+        gasLimit: 90000
+      }) 
+      console.log(`#${axieId} feed ${cocoToConsume}`, txFeed.hash)
+      consumablesToEat = consumablesToEat - cocoToConsume
+      await new Promise(resolve => setTimeout(resolve, 60000)) 
+    }    
+  }
+}
+
+async function calcCocoToConsume(axieId:string, consumablesToEat:number, usePremium:boolean, accessToken: string) {
+
+  const axpPerCoco = usePremium ? 50 : 200
+  const axieAxpForCoco = await getDailyCocoConsumedAxp(axieId, accessToken )
+  const maxCocoToConsume = Math.floor(axieAxpForCoco / axpPerCoco)
+  let cocoToConsume = 0
+
+  if(maxCocoToConsume == 0) {
+    console.log(`Axie # has already ate enough Coco for the day`)
+    return cocoToConsume
+  } else if (maxCocoToConsume <= consumablesToEat){
+    console.log("eat the max coco")
+    cocoToConsume = maxCocoToConsume
+  } else {
+    console.log("eat all available coco")
+    cocoToConsume = consumablesToEat
+  } 
+  return cocoToConsume
+}
+
 
 async function isActivated(address: string) {
-  return atiaContract.hasCurrentlyActivated(address).then((res: boolean) => res)
+  return await atiaContract.hasCurrentlyActivated(address).then((res: boolean) => res)
 }
 
 async function activateStreak(signer: Wallet) {
@@ -101,29 +158,50 @@ async function activateStreak(signer: Wallet) {
 }
 
 async function axieHard(){
-  getKeys().then((keys) => {
-    keys.forEach(async (key: string) => {
-      const signer = await new ethers.Wallet(key, provider)
+  const accounts: Account[] = getAccounts()
+  
+  for (const account of accounts) {
+    
+    const signer = await new ethers.Wallet(account.key, provider)
+    const accessTokenMessage = await generateAccessTokenMessage(signer.address)
+    const accessTokenSignature = await signer.signMessage(accessTokenMessage)
+    const { accessToken } = await exchangeToken(accessTokenSignature, accessTokenMessage)
+
+    const premium = account.rollPremium
+  
+    if(account.autoBlessing)
       await checkBlessings(signer)
-      await spendSlips(signer)
-      
-    })
-  })
+    if(account.autoRollShop)
+      await spendSlips(premium, signer, accessToken)
+    if(account.autoFeedAxies)
+      await feedAxiesCoco(account.axies, premium, signer, accessToken)
+
+  }
 }
 
-async function getKeys() {
-  return JSON.parse(fs.readFileSync('./privateKeys', 'utf8')).keys
+function getAccounts() {
+  return JSON.parse(fs.readFileSync('./privateKeys', 'utf8')).accounts
+} 
+
+interface Account {
+  key: string;
+  autoBlessing: boolean;
+  autoRollShop: boolean;
+  rollPremium: boolean;
+  autoFeedAxies: boolean;
+  axies: string[];
+
 }
 
 async function start() {
   if (!fs.existsSync('./privateKeys')) {
     throw Error(`privateKeys file not found`)
-  } else if ((await getKeys()).length <= 0) {
+  } else if (getAccounts().length <= 0) {
     throw Error(`No keys defined`)
   }
-  console.log(`⚙️ Starting Atia's Blessing bot (${(await getKeys()).length} addresses... AXIE HARD!)`)
+  console.log(`⚙️ Starting Atia's Blessing bot (${getAccounts().length} addresses... AXIE HARD!)`)
 
-  axieHard()
+  await axieHard()
 
 }
 
