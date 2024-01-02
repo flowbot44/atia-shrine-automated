@@ -20,7 +20,7 @@ const shopContract = new ethers.Contract('0x3e0674b1ddc84b0cfd9d773bb2ce23fe8f44
 const consumableAbi = JSON.parse(fs.readFileSync('abis/consumable.json', 'utf8'))
 const consumableContract = new ethers.Contract('0xeaa3d9af9c9c218dae63922c97eeee6c3f770e15', consumableAbi, provider)
 
-const POUCHES_PER_TX = 2
+const POUCHES_PER_TX = 100
 
 
 cron.schedule('0 1 * * *', () => {
@@ -106,7 +106,7 @@ async function feedAxiesCoco(axies: string[],usePremium:boolean, signer: Wallet,
       return
     }
     const cocoToConsume = await calcCocoToConsume(axieId, consumablesToEat, usePremium, accessToken)
-    console.log(`Axie trying to eat ${cocoToConsume} coco`)
+    
     if(cocoToConsume == 0){
       console.log(`Axie #${axieId} cannot consume coco check level or was already feed`)
     }else {
@@ -116,14 +116,14 @@ async function feedAxiesCoco(axies: string[],usePremium:boolean, signer: Wallet,
       }) 
       console.log(`#${axieId} feed ${cocoToConsume}`, txFeed.hash)
       consumablesToEat = consumablesToEat - cocoToConsume
-      await new Promise(resolve => setTimeout(resolve, 60000)) 
+      await new Promise(resolve => setTimeout(resolve, 10000)) 
     }    
   }
 }
 
 async function calcCocoToConsume(axieId:string, consumablesToEat:number, usePremium:boolean, accessToken: string) {
 
-  const axpPerCoco = usePremium ? 50 : 200
+  const axpPerCoco = usePremium ? 200 : 50
   const axieAxpForCoco = await getDailyCocoConsumedAxp(axieId, accessToken )
   const maxCocoToConsume = Math.floor(axieAxpForCoco / axpPerCoco)
   let cocoToConsume = 0
@@ -132,10 +132,8 @@ async function calcCocoToConsume(axieId:string, consumablesToEat:number, usePrem
     console.log(`Axie # has already ate enough Coco for the day`)
     return cocoToConsume
   } else if (maxCocoToConsume <= consumablesToEat){
-    console.log("eat the max coco")
     cocoToConsume = maxCocoToConsume
   } else {
-    console.log("eat all available coco")
     cocoToConsume = consumablesToEat
   } 
   return cocoToConsume

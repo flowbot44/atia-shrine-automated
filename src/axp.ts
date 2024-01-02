@@ -33,7 +33,7 @@ export async function getConsumablesCount(address: string, premium: boolean, tok
     
     const consumableData = await fetchApi(queryConsumables, variables, headers)
     
-    if ((consumableData as any)?.data?.erc1155Token.total) {
+    if ((consumableData as any)?.data?.erc1155Token) {
         return (consumableData as any).data.erc1155Token.total
     } else {
         console.log(`Failed to get count for Comsumable ${premium ? "Premium ": "" }Coco`, consumableData)
