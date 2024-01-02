@@ -1,6 +1,21 @@
 {
-    "keys": [
-        "0xYOUR",
-        "0xKEYS"
+    "accounts": [
+        {
+            "key": "0xYOUR",
+            "autoBlessing": false,
+            "autoRollShop": false,
+            "rollPremium": false,
+            "autoFeedAxies": false,
+            "axies": ["axieIdFeed1","axieIdFeed2"]
+        },
+        {
+            "key": "0xKEYS",
+            "autoBlessing": false,
+            "autoRollShop": false,
+            "rollPremium": false,
+            "autoFeedAxies": false,
+            "axies": ["axieIdFeed3"]
+        }
     ]
+
 }
