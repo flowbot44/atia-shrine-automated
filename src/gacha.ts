@@ -17,7 +17,6 @@ const buyGachaTicketsMsg = `mutation BuyGachaTicketMessage($chests: [GachaChestT
 const querySlipBalance = `query GetFortuneSlipBalance {
     profile {
       fortuneSlipBalance
-      __typename
     }
   }`
 
@@ -45,7 +44,7 @@ export async function getSlipBalance(token:string) {
 
     const slipsData = await fetchApi(querySlipBalance, {}, headers)
     
-    if ((slipsData as any)?.data?.profile.fortuneSlipBalance) {
+    if ((slipsData as any)?.data?.profile) {
         return (slipsData as any).data.profile.fortuneSlipBalance
     } else {
        console.log(`Failed get slips count`, slipsData)

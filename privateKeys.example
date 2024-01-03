@@ -2,7 +2,7 @@
     "accounts": [
         {
             "key": "0xYOUR",
-            "autoBlessing": false,
+            "autoBlessing": true,
             "autoRollShop": false,
             "rollPremium": false,
             "autoFeedAxies": false,
@@ -10,7 +10,7 @@
         },
         {
             "key": "0xKEYS",
-            "autoBlessing": false,
+            "autoBlessing": true,
             "autoRollShop": false,
             "rollPremium": false,
             "autoFeedAxies": false,
