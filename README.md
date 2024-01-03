@@ -1,11 +1,16 @@
 # Atia's Shrine Automation
 
-Automated Atia's Blessing, Garuda Shop and Feed Axies Coco, runs every day automatically.
+Automated Atia's Blessing, Garuda Shop and Feed Axies Coco.
 
-Adds to your daily streak which claims slips. Uses all of your slips in 100 pouch batches for effeceny RON uses. Feeds mutiple axies Coco to the limits of consumption for its level
-* currently you need to manually approve 1155 to be used
-* doesn't feed or feeds to the limit of ascending level, need to manually do to continute feeding
-* feeds first axie then moves on to the next axie, if not enough coco it will feed what it can or skip if all is used.
+* Runs automatically every day.
+* Increases your daily streak for claiming Slips.
+* Efficiently uses RON by spending all slips in batches of 100.
+* Can feed multiple Axies (Coco) to their consumption limit based on their level.
+
+Note:
+* Currently you need to manually approve 1155 tokens (Coco) to be used on account
+* Does not feed Axies beyond their level cap. Manual intervention is needed to continue feeding.
+* Feeds the first Axie and then moves on to the next. If there's not enough Coco, it will feed what it can or skip the Axie if all Coco is used.
     
 
 

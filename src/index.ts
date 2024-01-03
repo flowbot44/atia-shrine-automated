@@ -31,7 +31,7 @@ cron.schedule('0 1 * * *', () => {
 });
 
 async function checkBlessings(signer: Wallet) {
-  console.log(`\n Making an offering to Atia`);
+  console.log(`\nMaking an offering to Atia`);
 
   try {
     const isActivatedResult = await isActivated(signer.address);
@@ -66,7 +66,7 @@ async function spendSlips(premium: boolean, signer: Wallet, accessToken: string)
   if(amount > 0){
     const connectedContract = <ethers.Contract>shopContract.connect(signer)
     
-    console.log(`Buying ${amount}x ${POUCHES_PER_TX}${premium ? ' Premium' : ''} Pouches (total ${amount * POUCHES_PER_TX * slipsPerPouch} slips)`)
+    console.log(`🎲 Buying ${amount}x ${POUCHES_PER_TX}${premium ? ' Premium' : ''} Pouches (total ${amount * POUCHES_PER_TX * slipsPerPouch} slips)`)
 
     for (let i = 1; i <= amount; i++) {
       results = await fetchBuyGacha(POUCHES_PER_TX, premium, accessToken)
@@ -88,7 +88,7 @@ async function spendSlips(premium: boolean, signer: Wallet, accessToken: string)
 
     }
   }else{
-    console.log(`Not enough slips ${slips} to batch into an efficent roll of ${POUCHES_PER_TX}`)
+    console.log(`⭕ Not enough slips ${slips} to batch into an efficent roll of ${POUCHES_PER_TX}`)
   }
 
 }
@@ -108,14 +108,20 @@ async function feedAxiesCoco(axies: string[],usePremium:boolean, signer: Wallet,
     const cocoToConsume = await calcCocoToConsume(axieId, consumablesToEat, usePremium, accessToken)
     
     if(cocoToConsume == 0){
-      console.log(`Axie #${axieId} cannot consume coco check level or was already feed`)
+      console.log(`⭕ Axie #${axieId} cannot consume coco check level or was already feed`)
     }else {
-      const connectedContract = <ethers.Contract>consumableContract.connect(signer)
-      const txFeed = await connectedContract.consume(axieId, usePremium ? '2' : '1', cocoToConsume, {
-        gasLimit: 90000
-      }) 
-      console.log(`#${axieId} feed ${cocoToConsume}`, txFeed.hash)
-      consumablesToEat = consumablesToEat - cocoToConsume
+      try{
+        const connectedContract = <ethers.Contract>consumableContract.connect(signer)
+        const txFeed = await connectedContract.consume(axieId, usePremium ? '2' : '1', cocoToConsume, {
+          gasLimit: 90000
+        })
+      
+        console.log(`🍫 Axie #${axieId} feed ${cocoToConsume} Coco `, txFeed.hash)
+        consumablesToEat = consumablesToEat - cocoToConsume
+      } catch (e: Error | any) {
+        console.error(`⚠️ Axie #${axieId} feeding failed for ${signer.address} ${e.code} (${e.info.error.message})`)
+        return false
+      }
       await new Promise(resolve => setTimeout(resolve, 10000)) 
     }    
   }
@@ -129,7 +135,6 @@ async function calcCocoToConsume(axieId:string, consumablesToEat:number, usePrem
   let cocoToConsume = 0
 
   if(maxCocoToConsume == 0) {
-    console.log(`Axie # has already ate enough Coco for the day`)
     return cocoToConsume
   } else if (maxCocoToConsume <= consumablesToEat){
     cocoToConsume = maxCocoToConsume
