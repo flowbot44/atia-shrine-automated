@@ -74,8 +74,8 @@ async function spendSlips(premium: boolean, signer: Wallet, accessToken: string)
         const chestsToRoll = Array(POUCHES_PER_TX).fill([premium ? '1' : '0', slipsPerPouch.toString()])
         const txRoll = await connectedContract.roll(chestsToRoll, results.nonce, results.deadline, results.slipAmount, results.signature,
           {
-            value: ethers.parseEther((0.006 * POUCHES_PER_TX + .11).toString()),
-            gasLimit: 600000
+            value: ethers.parseEther((0.006 * (POUCHES_PER_TX-1) + .11).toString()),
+            gasLimit: 6000000
           })
         console.log(`#${i}\tPurchased ${results.chests.length}${premium ? ' Premium' : ''} Pouches:`, txRoll.hash)
       } catch (e: Error | any) {
