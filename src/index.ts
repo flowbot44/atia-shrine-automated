@@ -23,7 +23,7 @@ const consumableContract = new ethers.Contract('0xeaa3d9af9c9c218dae63922c97eeee
 const POUCHES_PER_TX = 100
 
 
-cron.schedule('0 1 * * *', () => {
+cron.schedule('15 3 * * *', () => {
   console.log(`\nStarting Daily Axie Hard`)
   axieHard()
 }, {
