@@ -96,7 +96,6 @@ async function spendSlips(premium: boolean, signer: Wallet, accessToken: string)
 async function feedAxiesCoco(axies: string[],usePremium:boolean, signer: Wallet, accessToken: string) {
   
   let consumablesToEat = await getConsumablesCount(signer.address, usePremium, accessToken )
-  
   //TODO check approval to consume 1155 before proceeding
 
   for (const axieId of axies) {
@@ -166,18 +165,24 @@ async function axieHard(){
   for (const account of accounts) {
     
     const signer = await new ethers.Wallet(account.key, provider)
-    const accessTokenMessage = await generateAccessTokenMessage(signer.address)
-    const accessTokenSignature = await signer.signMessage(accessTokenMessage)
-    const { accessToken } = await exchangeToken(accessTokenSignature, accessTokenMessage)
-
-    const premium = account.rollPremium
+ 
   
     if(account.autoBlessing)
       await checkBlessings(signer)
-    if(account.autoRollShop)
-      await spendSlips(premium, signer, accessToken)
-    if(account.autoFeedAxies)
-      await feedAxiesCoco(account.axies, premium, signer, accessToken)
+
+    if(account.autoRollShop || account.autoFeedAxies){
+      
+      const accessTokenMessage = await generateAccessTokenMessage(signer.address)
+      const accessTokenSignature = await signer.signMessage(accessTokenMessage)
+      const { accessToken } = await exchangeToken(accessTokenSignature, accessTokenMessage)
+
+      const premium = account.rollPremium
+    
+      if(account.autoRollShop)
+        await spendSlips(premium, signer, accessToken)
+      if(account.autoFeedAxies)
+        await feedAxiesCoco(account.axies, premium, signer, accessToken)
+    }
 
   }
 }
