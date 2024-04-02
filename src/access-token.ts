@@ -34,7 +34,7 @@ export const generateAccessTokenMessage = async (
 
 export const exchangeToken = async (signature: string, message: string) => {
   const data = await apiRequest<IAuthLoginResponse>(AUTH_LOGIN_URL, JSON.stringify({ signature, message }))
-
+  console.log(data)
   if (!data.accessToken) {
     throw new Error('No access token')
   }
